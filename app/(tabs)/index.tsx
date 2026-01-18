@@ -609,4 +609,273 @@ export default function MorseTabs() {
             </TouchableOpacity>
           </View>
         )}
+
+
         
+
+        {/* QUIZ */}
+        {activeTab === "Quiz" && (
+          <View style={styles.card}>
+            <Text style={styles.cardText}>Quiz / Testare</Text>
+
+            <ModeSelector value={quizMode} onChange={setQuizMode} label="Mod pentru Quiz" />
+
+            {!quizRunning ? (
+              <TouchableOpacity
+                style={[styles.mainBtn, { marginTop: 14 }]}
+                onPressIn={() => talk("Start quiz")}
+                onPress={beginQuiz}
+                accessibilityRole="button"
+                accessibilityLabel="Start quiz"
+                accessibilityHint="Pornește un test cu întrebări"
+              >
+                <Text style={styles.btnText}>START QUIZ</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ marginTop: 14 }}>
+                <Text style={styles.quizTitle}>Identifică litera:</Text>
+                <Text style={styles.quizHint}>
+                  (Apasă „Repetă” ca să redea din nou Morse)
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.secondaryBtn}
+                  onPressIn={() => talk("Repetă")}
+                  onPress={() => playMorse(quizPromptLetter, quizMode)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Repetă"
+                >
+                  <Text style={styles.secondaryBtnText}>REPETĂ</Text>
+                </TouchableOpacity>
+
+                <View style={{ marginTop: 10 }}>
+                  {quizOptions.map((opt) => (
+                    <TouchableOpacity
+                      key={opt}
+                      style={styles.optionBtn}
+                      onPressIn={() => talk(`Opțiunea ${opt}`)}
+                      onPress={() => answerQuiz(opt)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Răspuns ${opt}`}
+                    >
+                      <Text style={styles.optionText}>{opt}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {!!quizMessage && <Text style={styles.quizMessage}>{quizMessage}</Text>}
+
+                <View style={{ marginTop: 10 }}>
+                  <Text style={styles.smallMuted}>Scor: {quizScore} | Streak: {quizStreak}</Text>
+                  <Text style={styles.smallMuted}>
+                    All-time: {quizStats.correct}/{quizStats.attempts} corecte | Best streak: {quizStats.bestStreak}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.secondaryBtn, { marginTop: 12 }]}
+                  onPressIn={() => talk("Stop quiz")}
+                  onPress={endQuiz}
+                  accessibilityRole="button"
+                  accessibilityLabel="Stop quiz"
+                >
+                  <Text style={styles.secondaryBtnText}>STOP QUIZ</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* SETARI */}
+        {activeTab === "Setari" && (
+          <View style={styles.card}>
+            <Text style={styles.cardText}>Setări</Text>
+
+            <View style={styles.row}>
+              <Text style={styles.smallMuted}>Ghidare vocală (spune butoanele)</Text>
+              <Switch
+                value={voiceGuidance}
+                onValueChange={(v) => {
+                  setVoiceGuidance(v);
+                  if (v) talk("Ghidare vocală activată");
+                }}
+                accessibilityLabel="Ghidare vocală"
+              />
+            </View>
+
+            <Text style={styles.helpText}>
+              Pentru citirea automată a interfeței:
+              {"\n"}• Android: Settings → Accessibility → TalkBack
+              {"\n"}• iOS: Settings → Accessibility → VoiceOver
+              {"\n\n"}Ghidarea vocală din aplicație e suplimentară și spune numele butoanelor când le atingi.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { marginTop: 10 }]}
+              onPressIn={() => talk("Logout")}
+              onPress={async () => {
+                // imi opreste orice redare
+                stopPlayback();
+                await logoutSession();
+                router.replace("/");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Logout"
+              accessibilityHint="Revii la ecranul de intrare"
+            >
+              <Text style={styles.secondaryBtnText}>LOGOUT</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* TAB BAR ridicat */}
+      <View
+        style={[
+          styles.tabBar,
+          {
+            width,
+            bottom: insets.bottom + 16,
+          },
+        ]}
+      >
+        {(["Translator", "Alfabet", "Progres", "Quiz", "Setari"] as Tab[]).map((t) => (
+          <TouchableOpacity
+            key={t}
+            style={styles.tabItem}
+            onPressIn={() => talk(`Tab ${t}`)}
+            onPress={() => setActiveTab(t)}
+            accessibilityRole="tab"
+            accessibilityLabel={`Tab ${t}`}
+            accessibilityState={{ selected: activeTab === t }}
+          >
+            <Text style={[styles.tabLabel, activeTab === t && { color: "#0ea5e9" }]}>{t}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#0b1020" },
+  content: { padding: 20, paddingTop: 48 },
+
+  title: { color: "#38bdf8", fontSize: 28, fontWeight: "800", textAlign: "center", marginBottom: 8 },
+  userLine: { color: "#94a3b8", textAlign: "center", marginBottom: 16 },
+  userName: { color: "#e2e8f0", fontWeight: "800" },
+
+  card: {
+    backgroundColor: "#0f172a",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#1f2937",
+    marginBottom: 16,
+  },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  cardText: { color: "#e2e8f0", fontSize: 16, fontWeight: "700" },
+
+  smallLabel: { color: "#94a3b8", fontSize: 12, marginBottom: 6 },
+  smallMuted: { color: "#cbd5e1", fontSize: 12 },
+
+  input: {
+    backgroundColor: "#111827",
+    borderColor: "#1f2937",
+    borderWidth: 1,
+    borderRadius: 12,
+    color: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    fontSize: 16,
+    marginBottom: 12,
+  },
+
+  mainBtn: { backgroundColor: "#0ea5e9", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
+  btnText: { color: "#fff", fontWeight: "800" },
+
+  secondaryBtn: {
+    backgroundColor: "#111827",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  secondaryBtnText: { color: "#e2e8f0", fontWeight: "800" },
+
+  modeSelector: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: "#111827",
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#1f2937",
+  },
+  activeMode: { backgroundColor: "#0ea5e9", borderColor: "#0ea5e9" },
+  modeLabel: { color: "#fff", fontSize: 10, fontWeight: "800" },
+
+  letterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: "#111827",
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#1f2937",
+  },
+  letterText: { color: "#38bdf8", fontSize: 18, fontWeight: "900" },
+  codeText: { color: "#fff", fontSize: 18, letterSpacing: 3 },
+
+  statsCard: {
+    backgroundColor: "#111827",
+    borderRadius: 16,
+    padding: 18,
+    alignItems: "center",
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#1f2937",
+  },
+  statsNum: { color: "#38bdf8", fontSize: 52, fontWeight: "900" },
+  statsDesc: { color: "#cbd5e1", marginTop: 6 },
+
+  helpText: { color: "#cbd5e1", marginTop: 10, lineHeight: 18 },
+
+  // Quiz
+  quizTitle: { color: "#e2e8f0", fontWeight: "800", marginTop: 8 },
+  quizHint: { color: "#94a3b8", fontSize: 12, marginBottom: 10 },
+  optionBtn: {
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#1f2937",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  optionText: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  quizMessage: { color: "#e2e8f0", marginTop: 8, fontWeight: "800", textAlign: "center" },
+
+  // tab bar ridicat
+  tabBar: {
+    position: "absolute",
+    height: 64,
+    backgroundColor: "#050814",
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#1f2937",
+    borderRadius: 14,
+    marginHorizontal: 12,
+    left: 0,
+    right: 0,
+    overflow: "hidden",
+  },
+  tabItem: { flex: 1, justifyContent: "center", alignItems: "center" },
+  tabLabel: { color: "#94a3b8", fontSize: 12, fontWeight: "800" },
+});
+
+
